@@ -1,0 +1,8 @@
+#data/
+Spec_attempt_v1/
+node_modules/
+.svelte-kit/
+build/
+storage/
+sample_forecast.xlsx
+project_notes/
