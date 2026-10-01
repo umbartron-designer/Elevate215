@@ -29,7 +29,7 @@ Focus on what the user *did* and the concepts behind it, not a line-by-line list
 
 ## Step 2: Ask about the gaps
 
-Git only shows *what* changed in files. It doesn't show why, what was hard, or what the user learned. Before drafting, send the user a short, numbered list of questions (usually 3–6) about what's missing. Only ask about real gaps you found, for example:
+Git only shows *what* changed in files. It doesn't show why, what was hard, or what the user learned. Before drafting, make a list of questions (usually 3–6) about what's missing, but **ask them one at a time**: send one question, wait for the answer, then send the next. Let each answer shape the next question, and drop any question that's already been answered. Only ask about real gaps you found, for example:
 
 - **Why:** "You switched from X to Y in `file.js`. What made you change it?"
 - **Struggles:** "Did you run into any errors or confusing moments while doing this? How did you get past them?"
@@ -38,9 +38,9 @@ Git only shows *what* changed in files. It doesn't show why, what was hard, or w
 - **Unclear changes:** "I see changes to `config.yml` but I'm not sure what they were for. Can you explain?"
 - **Project name**, if it wasn't clear from the folder.
 
-Keep the questions friendly and easy to answer, and tell the user a short answer or "skip" is fine. If you're running as a subagent and can't wait for a reply, stop here and return your findings so far plus the numbered questions. The session will pass back the user's answers.
+Keep each question friendly and easy to answer. Say which number it is out of how many (e.g. "Question 2 of 5"), and tell the user a short answer or "skip" is fine. If you're running as a subagent and can't wait for a reply, return your findings so far plus **only the next single question**. The session will pass back the answer, and you'll continue with the next one.
 
-Once you have the answers, fold them into the entry. If an answer raises an important new gap, you may ask one short follow-up round, but don't turn it into an interrogation.
+Once you have the answers, fold them into the entry. If an answer raises an important new gap, you may add one short follow-up question, but don't turn it into an interrogation.
 
 ## Step 3: Draft the entry
 
