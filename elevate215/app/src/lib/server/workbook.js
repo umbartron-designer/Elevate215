@@ -145,13 +145,15 @@ function readHeader(sheet) {
 	return columns;
 }
 
+// The helpers below are exported so commitments.js can read its file the same way.
+
 /**
  * Turn a month header into "YYYY-MM". Accepts real dates, "Jul 2025", "July 2025",
  * "Jul-25", "2025-07" and "07/2025".
  * @param {unknown} value
  * @param {string} address
  */
-function parseMonth(value, address) {
+export function parseMonth(value, address) {
 	if (value instanceof Date && !isNaN(value.getTime())) {
 		return `${value.getUTCFullYear()}-${pad(value.getUTCMonth() + 1)}`;
 	}
@@ -178,7 +180,7 @@ function parseMonth(value, address) {
  * Accepts numbers and text like "$1,250.00" or "(1,250.00)".
  * @param {import('exceljs').Cell} cell
  */
-function readAmount(cell) {
+export function readAmount(cell) {
 	const value = cellValue(cell);
 	if (isBlank(value)) return null;
 	if (typeof value === 'number') return round(value);
@@ -198,7 +200,7 @@ function readAmount(cell) {
  * @param {import('exceljs').Cell} cell
  * @returns {unknown}
  */
-function cellValue(cell) {
+export function cellValue(cell) {
 	let v = cell.value;
 	if (v && typeof v === 'object' && 'result' in v) v = /** @type {any} */ (v.result);
 	if (v && typeof v === 'object' && !(v instanceof Date)) {
@@ -211,9 +213,9 @@ function cellValue(cell) {
 }
 
 /** @param {unknown} v */
-const isBlank = (v) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
+export const isBlank = (v) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
 /** @param {unknown} v */
-const text = (v) => (isBlank(v) ? '' : String(v).trim());
+export const text = (v) => (isBlank(v) ? '' : String(v).trim());
 /** @param {number} n */
 const round = (n) => Math.round(n * 100) / 100;
 /** @param {number} n */

@@ -10,6 +10,7 @@
 		"start": "node build",
 		"test": "vitest run",
 		"sample": "node scripts/make-sample.js",
+		"sample:commitments": "node scripts/make-commitments-sample.js",
 		"migrate": "node scripts/migrate-csv-to-db.js"
 	},
 	"devDependencies": {
@@ -21,6 +22,7 @@
 		"vitest": "^3.1.0"
 	},
 	"dependencies": {
+		"chart.js": "^4.5.1",
 		"exceljs": "^4.4.0"
 	}
 }
