@@ -18,4 +18,4 @@ One Excel file: the forecast workbook, with 9 departments down the side and mont
 A saved version with one row per department per month, holding budget, actual and forecast. If the file is broken, nothing is saved and an error names the problem.
 
 ### Done when
-Can Priya successfully upload the forecast workbook? **Yes / No**
+when the code can successfully save a file and read it.

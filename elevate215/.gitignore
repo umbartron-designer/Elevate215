@@ -5,4 +5,5 @@ node_modules/
 build/
 storage/
 sample_forecast.xlsx
+sample_commitments.xlsx
 project_notes/

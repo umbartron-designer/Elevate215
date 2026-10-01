@@ -15,7 +15,7 @@ Renée uploads the grant commitments file, and the dashboard saves its numbers a
 One Excel file: the grant commitments file, with one grant per row, showing its funder, department and whether it is restricted, and the amount committed in each month across.
 
 ### Outputs
-A saved version with one row per grant per month, holding the committed amount. If the file is broken, nothing is saved and an error names the problem.
+A saved version with one row per grant per month, holding its funder, department, whether it is restricted, and the committed amount. If the file is broken, nothing is saved and an error names the problem.
 
 ### Done when
-Can Renée successfully upload the grant commitments file? **Yes / No**
+When the code can save the file.
