@@ -1,0 +1,16 @@
+{
+	"name": "elevate215-v2",
+	"description": "Project settings: the libraries this app needs and the npm test command.",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"exceljs": "^4.4.0"
+	},
+	"devDependencies": {
+		"vitest": "^3.1.0"
+	}
+}
