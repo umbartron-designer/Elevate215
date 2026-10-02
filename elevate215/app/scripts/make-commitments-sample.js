@@ -32,7 +32,7 @@ function seeded(seed) {
  * Good enough for the roll-up file; it doesn't handle line breaks inside quotes.
  * @param {string} line
  */
-function splitCsvLine(line) {
+export function splitCsvLine(line) {
 	const fields = [];
 	let field = '';
 	let quoted = false;
