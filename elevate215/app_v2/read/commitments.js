@@ -34,7 +34,7 @@ export async function readCommitments(file) {
 	LABEL_HEADERS.forEach((expected, i) => {
 		const cell = headerRow.getCell(i + 1);
 		if (text(cellValue(cell)).toLowerCase() !== expected.toLowerCase()) {
-			throw new UploadError(`Cell ${cell.address} must say "${expected}".`);
+			throw new UploadError('header', `Cell ${cell.address} must say "${expected}".`);
 		}
 	});
 
@@ -46,7 +46,7 @@ export async function readCommitments(file) {
 		if (isBlank(label)) break; // end of the month columns
 		monthColumns.push({ col: c, month: parseMonth(label, cell.address) });
 	}
-	if (monthColumns.length === 0) throw new UploadError('Row 1 must list the months, starting in column E.');
+	if (monthColumns.length === 0) throw new UploadError('header', 'Row 1 must list the months, starting in column E.');
 
 	/** @type {CommitmentRow[]} */
 	const rows = [];
@@ -63,18 +63,18 @@ export async function readCommitments(file) {
 		if (!hasAnything) continue;
 		if (/^total\b/i.test(grant)) continue;
 
-		if (!grant) throw new UploadError(`Row ${r}: grant name is missing.`);
-		if (!funder) throw new UploadError(`Row ${r}: funder is missing for ${grant}.`);
-		if (!department) throw new UploadError(`Row ${r}: department is missing for ${grant}.`);
+		if (!grant) throw new UploadError('cell', `Row ${r}: grant name is missing.`);
+		if (!funder) throw new UploadError('cell', `Row ${r}: funder is missing for ${grant}.`);
+		if (!department) throw new UploadError('cell', `Row ${r}: department is missing for ${grant}.`);
 
 		const yesNo = restrictedText.toLowerCase();
 		if (yesNo !== 'yes' && yesNo !== 'no') {
-			throw new UploadError(`Cell ${row.getCell(4).address}: Restricted must be Yes or No, not "${restrictedText}".`);
+			throw new UploadError('cell', `Cell ${row.getCell(4).address}: Restricted must be Yes or No, not "${restrictedText}".`);
 		}
 
 		// The same grant twice would double-count its money.
 		if (seenOn.has(grant)) {
-			throw new UploadError(`Row ${r}: ${grant} already appears on row ${seenOn.get(grant)}.`);
+			throw new UploadError('duplicate', `Row ${r}: ${grant} already appears on row ${seenOn.get(grant)}.`);
 		}
 		seenOn.set(grant, r);
 
@@ -90,6 +90,6 @@ export async function readCommitments(file) {
 		}
 	}
 
-	if (seenOn.size === 0) throw new UploadError('The file has no grants in it.');
+	if (seenOn.size === 0) throw new UploadError('count', 'The file has no grants in it.');
 	return rows;
 }

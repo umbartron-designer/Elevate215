@@ -18,7 +18,8 @@ const COMMITMENT_COLUMNS = /** @type {const} */ ({
 
 /**
  * @typedef {{ uploadedBy: string, filename: string }} UploadInfo
- * @typedef {{ saved: true, id: number, rowCount: number } | { saved: false, reason: string }} UploadResult
+ * @typedef {import('./read/excel.js').ProblemType} ProblemType
+ * @typedef {{ saved: true, id: number, rowCount: number } | { saved: false, type: ProblemType, reason: string }} UploadResult
  */
 
 /**
@@ -50,9 +51,10 @@ async function upload(read, store, file, info) {
 	try {
 		rows = await read(file);
 	} catch (err) {
-		if (err instanceof UploadError) return { saved: false, reason: err.message };
+		if (err instanceof UploadError) return { saved: false, type: err.type, reason: err.message };
 		throw err; // not the file's fault (a bug), so don't hide it
 	}
-	const { id, rowCount } = await store.saveVersion(rows, info);
+	// Keep the uploaded file too, so it can be downloaded later.
+	const { id, rowCount } = await store.saveVersion(rows, info, Buffer.from(file));
 	return { saved: true, id, rowCount };
 }

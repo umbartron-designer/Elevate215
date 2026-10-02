@@ -37,7 +37,13 @@ describe('good commitments file', () => {
 		expect(rows[24].restricted).toBe(false); // General Support is unrestricted
 
 		const [version] = await uploads.commitmentsStore.listVersions();
-		expect(version).toMatchObject({ id: 1, uploadedBy: 'Renée', filename: 'commitments.xlsx' });
+		expect(version).toMatchObject({ id: 1, uploadedBy: 'Renée', filename: 'commitments.xlsx', rowCount: 60 });
+	});
+
+	test('keeps an exact copy of the uploaded file', async () => {
+		const file = await toXlsx(commitmentsGrid());
+		await uploads.uploadCommitments(file, info);
+		expect(await uploads.commitmentsStore.readOriginal(1)).toEqual(file);
 	});
 
 	test('saving again makes version 2 and leaves version 1 alone', async () => {
@@ -52,40 +58,41 @@ describe('good commitments file', () => {
 
 describe('broken commitments file is not saved and says why', () => {
 	/**
-	 * Upload a file, expect it rejected with this reason, and expect nothing saved.
+	 * Upload a file, expect it rejected with this type and reason, and expect nothing saved.
 	 * @param {Buffer} file
+	 * @param {string} type
 	 * @param {string} reason
 	 */
-	async function expectRejected(file, reason) {
-		expect(await uploads.uploadCommitments(file, info)).toEqual({ saved: false, reason });
+	async function expectRejected(file, type, reason) {
+		expect(await uploads.uploadCommitments(file, info)).toEqual({ saved: false, type, reason });
 		expect(await uploads.commitmentsStore.listVersions()).toEqual([]);
 	}
 
 	test('not an .xlsx file', async () => {
-		await expectRejected(Buffer.from('just some text'), 'This is not a readable .xlsx file.');
+		await expectRejected(Buffer.from('just some text'), 'unreadable', 'This is not a readable .xlsx file.');
 	});
 
 	test('same grant twice', async () => {
 		const grid = commitmentsGrid();
 		grid[5][0] = 'Youth Jobs'; // row 6 now repeats the grant on row 2
-		await expectRejected(await toXlsx(grid), 'Row 6: Youth Jobs already appears on row 2.');
+		await expectRejected(await toXlsx(grid), 'duplicate', 'Row 6: Youth Jobs already appears on row 2.');
 	});
 
 	test('wrong header', async () => {
 		const grid = commitmentsGrid();
 		grid[0][1] = 'Funders';
-		await expectRejected(await toXlsx(grid), 'Cell B1 must say "Funder".');
+		await expectRejected(await toXlsx(grid), 'header', 'Cell B1 must say "Funder".');
 	});
 
 	test('Restricted is not Yes or No', async () => {
 		const grid = commitmentsGrid();
 		grid[1][3] = 'Maybe';
-		await expectRejected(await toXlsx(grid), 'Cell D2: Restricted must be Yes or No, not "Maybe".');
+		await expectRejected(await toXlsx(grid), 'cell', 'Cell D2: Restricted must be Yes or No, not "Maybe".');
 	});
 
 	test('text in an amount cell', async () => {
 		const grid = commitmentsGrid();
 		grid[1][5] = 'abc';
-		await expectRejected(await toXlsx(grid), 'Cell F2: "abc" is not a number.');
+		await expectRejected(await toXlsx(grid), 'cell', 'Cell F2: "abc" is not a number.');
 	});
 });

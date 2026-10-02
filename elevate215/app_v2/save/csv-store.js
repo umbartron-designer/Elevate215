@@ -1,19 +1,21 @@
 /**
  * Save rows as numbered versions in CSV files. Old versions are never overwritten.
  *
- *   <folder>/versions.csv     id,uploaded_at,uploaded_by,filename
- *   <folder>/<id>/rows.csv    one line per row, columns as given to createCsvStore
+ *   <folder>/versions.csv          id,uploaded_at,uploaded_by,filename,row_count
+ *   <folder>/<id>/rows.csv         one line per row, columns as given to createCsvStore
+ *   <folder>/<id>/original.xlsx    an exact copy of the uploaded file, for downloading
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const VERSION_COLUMNS = ['id', 'uploaded_at', 'uploaded_by', 'filename'];
+const VERSION_COLUMNS = ['id', 'uploaded_at', 'uploaded_by', 'filename', 'row_count'];
 const ROWS_FILE = 'rows.csv';
+const ORIGINAL_FILE = 'original.xlsx';
 
 /**
  * What each column holds, so reading a CSV back gives the right type.
  * @typedef {'text' | 'amount' | 'yesno'} ColumnType
- * @typedef {{ id: number, uploadedAt: string, uploadedBy: string, filename: string }} Version
+ * @typedef {{ id: number, uploadedAt: string, uploadedBy: string, filename: string, rowCount: number }} Version
  */
 
 /**
@@ -29,9 +31,10 @@ export function createCsvStore(folder, columns) {
 	/**
 	 * @param {Record<string, unknown>[]} rows
 	 * @param {{ uploadedBy: string, filename: string }} meta
+	 * @param {Buffer} [original]  the uploaded file, kept so it can be downloaded later
 	 * @returns {Promise<{ id: number, rowCount: number }>}
 	 */
-	function saveVersion(rows, { uploadedBy, filename }) {
+	function saveVersion(rows, { uploadedBy, filename }, original) {
 		const result = queue.then(async () => {
 			await fs.mkdir(folder, { recursive: true });
 			const id = (await lastId()) + 1;
@@ -44,6 +47,7 @@ export function createCsvStore(folder, columns) {
 			try {
 				const lines = [names.join(','), ...rows.map((row) => toCsvLine(names.map((n) => row[n])))];
 				await fs.writeFile(path.join(tmp, ROWS_FILE), lines.join('\n') + '\n');
+				if (original) await fs.writeFile(path.join(tmp, ORIGINAL_FILE), original);
 				await fs.rename(tmp, path.join(folder, String(id)));
 			} catch (err) {
 				await fs.rm(tmp, { recursive: true, force: true });
@@ -52,7 +56,7 @@ export function createCsvStore(folder, columns) {
 
 			const header = (await readIfExists(indexFile)) === null ? VERSION_COLUMNS.join(',') + '\n' : '';
 			const uploadedAt = new Date().toISOString();
-			await fs.appendFile(indexFile, header + toCsvLine([id, uploadedAt, uploadedBy, filename]) + '\n');
+			await fs.appendFile(indexFile, header + toCsvLine([id, uploadedAt, uploadedBy, filename, rows.length]) + '\n');
 			return { id, rowCount: rows.length };
 		});
 		queue = result.then(() => {}, () => {}); // keep the queue going even if this save failed
@@ -68,7 +72,9 @@ export function createCsvStore(folder, columns) {
 		if (index === null) return [];
 		const [, ...lines] = parseCsv(index); // skip the header line
 		return lines
-			.map(([id, uploadedAt, uploadedBy, filename]) => ({ id: Number(id), uploadedAt, uploadedBy, filename }))
+			.map(([id, uploadedAt, uploadedBy, filename, rowCount]) => ({
+				id: Number(id), uploadedAt, uploadedBy, filename, rowCount: Number(rowCount)
+			}))
 			.sort((a, b) => b.id - a.id);
 	}
 
@@ -78,14 +84,30 @@ export function createCsvStore(folder, columns) {
 	 * @param {number} id
 	 */
 	async function readVersion(id) {
-		// A whole number only, so the id can't point outside this folder.
-		if (!Number.isSafeInteger(id) || id < 1) throw new Error(`Version id must be a whole number, not "${id}".`);
-		const data = await readIfExists(path.join(folder, String(id), ROWS_FILE));
+		const data = await readIfExists(path.join(versionFolder(id), ROWS_FILE));
 		if (data === null) return [];
 		const [, ...lines] = parseCsv(data);
 		return lines.map((values) =>
 			Object.fromEntries(names.map((n, i) => [n, fromText(values[i] ?? '', columns[n])]))
 		);
+	}
+
+	/**
+	 * The exact file that was uploaded for one version, or null if there isn't one.
+	 * @param {number} id
+	 * @returns {Promise<Buffer | null>}
+	 */
+	function readOriginal(id) {
+		return readIfExists(path.join(versionFolder(id), ORIGINAL_FILE), false);
+	}
+
+	/**
+	 * One version's folder. The id must be a whole number, so it can't point outside this folder.
+	 * @param {number} id
+	 */
+	function versionFolder(id) {
+		if (!Number.isSafeInteger(id) || id < 1) throw new Error(`Version id must be a whole number, not "${id}".`);
+		return path.join(folder, String(id));
 	}
 
 	/** Highest version id already used, 0 if none. */
@@ -94,7 +116,7 @@ export function createCsvStore(folder, columns) {
 		return ids.length ? Math.max(...ids) : 0;
 	}
 
-	return { saveVersion, listVersions, readVersion };
+	return { saveVersion, listVersions, readVersion, readOriginal };
 }
 
 /**
@@ -108,12 +130,25 @@ function fromText(s, type) {
 }
 
 /**
- * A file's text, or null if it doesn't exist yet.
+ * A file's contents, or null if it doesn't exist yet.
+ * @overload
  * @param {string} file
+ * @param {true} [asText]
+ * @returns {Promise<string | null>}
  */
-async function readIfExists(file) {
+/**
+ * @overload
+ * @param {string} file
+ * @param {false} asText
+ * @returns {Promise<Buffer | null>}
+ */
+/**
+ * @param {string} file
+ * @param {boolean} [asText]  true for text (CSV), false for raw bytes (.xlsx)
+ */
+async function readIfExists(file, asText = true) {
 	try {
-		return await fs.readFile(file, 'utf8');
+		return await fs.readFile(file, asText ? 'utf8' : null);
 	} catch (err) {
 		if (/** @type {NodeJS.ErrnoException} */ (err).code === 'ENOENT') return null;
 		throw err;

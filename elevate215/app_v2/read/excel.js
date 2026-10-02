@@ -10,9 +10,28 @@ const FULL_MONTH_NAMES = [
 	'july', 'august', 'september', 'october', 'november', 'december'
 ];
 
+/**
+ * What kind of problem a broken file has, so the page can show a matching tip.
+ *   unreadable  not a real .xlsx file
+ *   header      the label or month rows are wrong
+ *   cell        one cell is wrong (bad amount, bad Yes/No, missing name)
+ *   duplicate   the same department or grant appears twice
+ *   count       wrong number of departments, or no grants at all
+ * @typedef {'unreadable' | 'header' | 'cell' | 'duplicate' | 'count'} ProblemType
+ */
+
 /** The file is broken. The message says why and is shown to the person uploading. */
 export class UploadError extends Error {
 	name = 'UploadError';
+
+	/**
+	 * @param {ProblemType} type
+	 * @param {string} message
+	 */
+	constructor(type, message) {
+		super(message);
+		this.type = type;
+	}
 }
 
 /**
@@ -24,10 +43,10 @@ export async function openFirstSheet(file) {
 	try {
 		await workbook.xlsx.load(file);
 	} catch {
-		throw new UploadError('This is not a readable .xlsx file.');
+		throw new UploadError('unreadable', 'This is not a readable .xlsx file.');
 	}
 	const sheet = workbook.worksheets[0];
-	if (!sheet) throw new UploadError('The workbook has no sheets.');
+	if (!sheet) throw new UploadError('unreadable', 'The workbook has no sheets.');
 	return sheet;
 }
 
@@ -40,7 +59,7 @@ export function cellValue(cell) {
 	let v = cell.value;
 	if (v && typeof v === 'object' && 'result' in v) v = /** @type {any} */ (v.result);
 	if (v && typeof v === 'object' && !(v instanceof Date)) {
-		if ('error' in v) throw new UploadError(`Cell ${cell.address}: contains the error ${v.error}.`);
+		if ('error' in v) throw new UploadError('cell', `Cell ${cell.address}: contains the error ${v.error}.`);
 		if ('formula' in v || 'sharedFormula' in v) return null; // formula with no saved result
 		if ('richText' in v) return v.richText.map((t) => t.text).join('');
 		if ('text' in v) return v.text;
@@ -79,7 +98,7 @@ export function parseMonth(value, address) {
 	if ((m = s.match(/^(\d{1,2})\/(\d{4})$/)) && Number(m[1]) >= 1 && Number(m[1]) <= 12) {
 		return `${m[2]}-${pad(Number(m[1]))}`;
 	}
-	throw new UploadError(`Cell ${address}: "${text(value)}" is not a month.`);
+	throw new UploadError('header', `Cell ${address}: "${text(value)}" is not a month.`);
 }
 
 /**
@@ -97,7 +116,7 @@ export function readAmount(cell) {
 	if (negative) s = s.slice(1, -1);
 	const n = s === '' ? NaN : Number(s);
 	if (!Number.isFinite(n)) {
-		throw new UploadError(`Cell ${cell.address}: "${text(value)}" is not a number.`);
+		throw new UploadError('cell', `Cell ${cell.address}: "${text(value)}" is not a number.`);
 	}
 	return round(negative ? -n : n);
 }

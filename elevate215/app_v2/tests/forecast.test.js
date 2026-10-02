@@ -33,7 +33,13 @@ describe('good forecast workbook', () => {
 		expect(rows[11].actual).toBeNull(); // Jun 2026 hasn't closed, so actual is blank
 
 		const [version] = await uploads.forecastStore.listVersions();
-		expect(version).toMatchObject({ id: 1, uploadedBy: 'Priya', filename: 'forecast.xlsx' });
+		expect(version).toMatchObject({ id: 1, uploadedBy: 'Priya', filename: 'forecast.xlsx', rowCount: 108 });
+	});
+
+	test('keeps an exact copy of the uploaded file', async () => {
+		const file = await toXlsx(forecastGrid());
+		await uploads.uploadForecast(file, info);
+		expect(await uploads.forecastStore.readOriginal(1)).toEqual(file);
 	});
 
 	test('saving again makes version 2 and leaves version 1 alone', async () => {
@@ -48,40 +54,41 @@ describe('good forecast workbook', () => {
 
 describe('broken forecast workbook is not saved and says why', () => {
 	/**
-	 * Upload a file, expect it rejected with this reason, and expect nothing saved.
+	 * Upload a file, expect it rejected with this type and reason, and expect nothing saved.
 	 * @param {Buffer} file
+	 * @param {string} type
 	 * @param {string} reason
 	 */
-	async function expectRejected(file, reason) {
-		expect(await uploads.uploadForecast(file, info)).toEqual({ saved: false, reason });
+	async function expectRejected(file, type, reason) {
+		expect(await uploads.uploadForecast(file, info)).toEqual({ saved: false, type, reason });
 		expect(await uploads.forecastStore.listVersions()).toEqual([]);
 	}
 
 	test('not an .xlsx file', async () => {
-		await expectRejected(Buffer.from('just some text'), 'This is not a readable .xlsx file.');
+		await expectRejected(Buffer.from('just some text'), 'unreadable', 'This is not a readable .xlsx file.');
 	});
 
 	test('only 8 departments', async () => {
 		const grid = forecastGrid();
 		grid.pop();
-		await expectRejected(await toXlsx(grid), 'Expected 9 departments, found 8.');
+		await expectRejected(await toXlsx(grid), 'count', 'Expected 9 departments, found 8.');
 	});
 
 	test('same department twice', async () => {
 		const grid = forecastGrid();
 		grid[10] = [...grid[2]]; // row 11 becomes a copy of Operations on row 3
-		await expectRejected(await toXlsx(grid), 'Row 11: Operations already appears on row 3.');
+		await expectRejected(await toXlsx(grid), 'duplicate', 'Row 11: Operations already appears on row 3.');
 	});
 
 	test('wrong header', async () => {
 		const grid = forecastGrid();
 		grid[1][0] = 'Dept';
-		await expectRejected(await toXlsx(grid), 'Cell A2 must say "Department".');
+		await expectRejected(await toXlsx(grid), 'header', 'Cell A2 must say "Department".');
 	});
 
 	test('text in an amount cell', async () => {
 		const grid = forecastGrid();
 		grid[2][1] = 'abc';
-		await expectRejected(await toXlsx(grid), 'Cell B3: "abc" is not a number.');
+		await expectRejected(await toXlsx(grid), 'cell', 'Cell B3: "abc" is not a number.');
 	});
 });

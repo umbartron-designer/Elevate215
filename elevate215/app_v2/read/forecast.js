@@ -41,9 +41,9 @@ export async function readForecast(file) {
 
 		if (!department && !hasAmounts) continue;
 		if (/^total\b/i.test(department)) continue;
-		if (!department) throw new UploadError(`Row ${r}: department name is missing.`);
+		if (!department) throw new UploadError('cell', `Row ${r}: department name is missing.`);
 		if (seenOn.has(department)) {
-			throw new UploadError(`Row ${r}: ${department} already appears on row ${seenOn.get(department)}.`);
+			throw new UploadError('duplicate', `Row ${r}: ${department} already appears on row ${seenOn.get(department)}.`);
 		}
 		seenOn.set(department, r);
 
@@ -59,7 +59,7 @@ export async function readForecast(file) {
 	}
 
 	if (seenOn.size !== EXPECTED_DEPARTMENTS) {
-		throw new UploadError(`Expected ${EXPECTED_DEPARTMENTS} departments, found ${seenOn.size}.`);
+		throw new UploadError('count', `Expected ${EXPECTED_DEPARTMENTS} departments, found ${seenOn.size}.`);
 	}
 	return rows;
 }
@@ -73,7 +73,7 @@ function readHeader(sheet) {
 	const measureRow = sheet.getRow(2);
 
 	if (text(cellValue(measureRow.getCell(1))).toLowerCase() !== 'department') {
-		throw new UploadError('Cell A2 must say "Department".');
+		throw new UploadError('header', 'Cell A2 must say "Department".');
 	}
 
 	/** @type {Map<string, Record<string, number>>} */
@@ -89,25 +89,25 @@ function readHeader(sheet) {
 		if (isBlank(label) && !measure) break; // end of the month columns
 		// A month label can be merged across its three columns, so a blank label means "same month".
 		if (!isBlank(label)) month = parseMonth(label, monthCell.address);
-		if (!month) throw new UploadError(`Cell ${monthCell.address}: month label is missing.`);
+		if (!month) throw new UploadError('header', `Cell ${monthCell.address}: month label is missing.`);
 		if (!MEASURES.includes(measure)) {
-			throw new UploadError(
+			throw new UploadError('header',
 				`Cell ${measureCell.address}: must be Budget, Actual or Forecast, not "${text(cellValue(measureCell))}".`
 			);
 		}
 
 		const cols = columns.get(month) ?? {};
 		if (cols[measure]) {
-			throw new UploadError(`Cell ${measureCell.address}: ${month} already has a ${measure} column.`);
+			throw new UploadError('header', `Cell ${measureCell.address}: ${month} already has a ${measure} column.`);
 		}
 		cols[measure] = c;
 		columns.set(month, cols);
 	}
 
-	if (columns.size === 0) throw new UploadError('Row 1 must list the months, starting in column B.');
+	if (columns.size === 0) throw new UploadError('header', 'Row 1 must list the months, starting in column B.');
 	for (const [m, cols] of columns) {
 		const missing = MEASURES.filter((x) => !cols[x]);
-		if (missing.length) throw new UploadError(`${m} is missing its ${missing.join(', ')} column.`);
+		if (missing.length) throw new UploadError('header', `${m} is missing its ${missing.join(', ')} column.`);
 	}
 	return columns;
 }
