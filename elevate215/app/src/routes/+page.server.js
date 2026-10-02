@@ -88,6 +88,7 @@ async function upload(request, { kind, field, missing, read, save }) {
 	let rows;
 	try {
 		rows = await read(await file.arrayBuffer());
+		console.log("ROWS::>", rows)
 	} catch (err) {
 		if (err instanceof WorkbookError) return fail(400, { kind, uploadedBy, error: err.message });
 		throw err;

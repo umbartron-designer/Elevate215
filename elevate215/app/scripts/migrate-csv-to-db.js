@@ -143,17 +143,19 @@ async function exists(file) {
  * Minimal CSV reader for the files csv.js writes (quoted fields, doubled quotes).
  * @param {string} textContent
  * @returns {Record<string, string>[]}
- */
+ */ 
+// This function separates csv content
 function parseCsv(textContent) {
-	/** @type {string[][]} */
-	const rows = [];
-	let row = [];
+	/** @type {string[][]} */ // this sets the type of the rows 
+	const rows = []; // this will make an array that cannot be changed
+	let row = []; // this will let this array change?
 	let field = '';
-	let quoted = false;
+	let quoted = false; 
+	// This will check the length of the csv content?
 	for (let i = 0; i < textContent.length; i++) {
-		const c = textContent[i];
-		if (quoted) {
-			if (c === '"' && textContent[i + 1] === '"') (field += '"'), i++;
+		const c = textContent[i]; // this is a variable that cannot be changed that holds the current number of each letter of the textcontent
+		if (quoted) { 
+			if (c === '"' && textContent[i + 1] === '"') (field += '"'), i++; 
 			else if (c === '"') quoted = false;
 			else field += c;
 		} else if (c === '"') quoted = true;

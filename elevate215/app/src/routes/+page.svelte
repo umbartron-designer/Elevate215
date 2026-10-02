@@ -51,9 +51,10 @@
 		}
 	});
 
-	function rememberName() {
+	function rememberName() { // Save the uploader's name to localStorage for future sessions
 		try {
 			localStorage.setItem(NAME_KEY, uploaderName.trim());
+			console.log('Name remembered:', uploaderName); 
 		} catch {
 			// not important if it can't be remembered
 		}
@@ -64,7 +65,9 @@
 	 * @param {Kind} kind
 	 * @returns {Status}
 	 */
-	function messageFor(kind) {
+	function messageFor(kind) { // get the status message for the given kind 
+
+		console.log("STATUS::>", kind);
 		if (status[kind]) return status[kind];
 		if (form?.kind !== kind) return null;
 		if ('error' in form) return { type: 'err', text: `Nothing was saved. ${form.error}` };
@@ -77,7 +80,7 @@
 	 * @param {{ id: number, rowCount: number }} version
 	 * @returns {Status}
 	 */
-	const savedMessage = (filename, version) => ({
+	const savedMessage = (filename, version) => ({ // generate a success message for the saved file
 		type: 'ok',
 		text: `Saved ${filename} as version ${version.id} (${version.rowCount} rows). The dashboard now shows it.`
 	});
@@ -90,7 +93,8 @@
 	}
 
 	/** @param {Kind} kind @param {Event} e */
-	function onFileChosen(kind, e) {
+	function onFileChosen(kind, e) {  // handle when a file is chosen for the given kind
+		console.log('File chosen for kind:', kind, 'file:', e.currentTarget.files?.[0]?.name);
 		const input = /** @type {HTMLInputElement} */ (e.currentTarget);
 		chosen[kind] = input.files?.[0]?.name ?? '';
 		status[kind] = null;
