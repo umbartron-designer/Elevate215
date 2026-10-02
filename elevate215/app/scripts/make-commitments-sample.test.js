@@ -13,5 +13,11 @@ describe('splitCsvLine', () => {
 	// An empty CSV file has no first line, so readSchoolNames would pass undefined.
 	it('throws when given no line at all', () => {
 		expect(() => splitCsvLine(undefined)).toThrow(TypeError);
+	}); 
+
+	// With no closing quote, every comma counts as text, so nothing gets split.
+	it('does not split a line with an unclosed quote', () => {
+		expect(splitCsvLine('"Lincoln High,Philadelphia,500')).toEqual(['Lincoln High,Philadelphia,500']);
 	});
+
 });
